@@ -21,7 +21,7 @@ test = [
 ]
 
 [project.urls]
-Repository = "https://github.com/kism/python-boilerplate"
+Repository = "https://github.com/kism/ansible-taste"
 
 [build-system]
 requires = ["uv_build>=0.11.0,<0.12.0"]
