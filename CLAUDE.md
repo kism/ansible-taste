@@ -71,16 +71,15 @@ from `ansible_taste/__main__.py::main()`:
 
 ```
 __main__.main()
-  args = _get_args()                      # positional `path` (default cwd), -v verbosity
-  setup_logger_cli(args.v)                 # ansible_taste/utils/logger.py
+  args = _get_args()                      # positional `path` (default cwd), no flags
   config = config.load_config(Path.cwd()) # reads .ansible-taste from CWD, NOT from `path`
   issues = scanner.scan(args.path, config)
     files = discovery.find_task_files(args.path, config.exclude_paths)
     for check in checks.ALL_CHECKS:
       if check.rule_id not in config.skip_list:
         issues += check.run(files)
-  if issues: print "... is in poor taste" + issues; exit 1
-  else: print "... is in good taste"; exit 0 (implicit)
+  if issues: console.print "... is in poor taste" + issues + count; exit 1
+  else: console.print "... is in good taste"; exit 0 (implicit)
 ```
 
 Key points for extending this:
@@ -107,18 +106,23 @@ Key points for extending this:
   module with that same `RULE_ID`/`run` shape and adding one line to
   `ALL_CHECKS`.
   - `unique_names`: task names must be unique **across the whole project**,
-    not just per-file. Uses `yaml.safe_load` per file; malformed YAML is
-    logged and skipped rather than crashing the whole scan. No line numbers
-    are tracked (PyYAML's `safe_load` doesn't retain source positions) —
-    issue locations are file-level only.
+    not just per-file. Uses `yaml.compose()` (not `safe_load`) per file so
+    each task's `name` node retains its source line (`start_mark.line`),
+    letting issue locations be `file:line` strings. Malformed YAML is
+    reported via the shared console and skipped rather than crashing the
+    whole scan.
   - `comment_ratio`: flags a file when whole-line comments (lines whose
     stripped content starts with `#`) are ≥30% of non-blank lines. Trailing
-    inline comments (`- name: foo  # note`) do not count.
+    inline comments (`- name: foo  # note`) do not count. Issue locations
+    are file-level only — there's no single line a "too many comments"
+    issue points at.
 
-- **Logging**: `ansible_taste/utils/logger.py` defines a custom `TRACE`
-  level below `DEBUG` and a `CustomLogger` class. Every module gets its
-  logger via `get_logger(__name__)` at module scope. CLI verbosity is wired
-  through `setup_logger_cli(args.v)`. Don't set up logging any other way.
+- **Output**: `ansible_taste/console.py` exports a single shared
+  `rich.console.Console` instance (`console`). All CLI/check output goes
+  through it (rich markup like `[bold red]...[/bold red]`) instead of
+  `print()` or a logger — there is no logging framework in this project.
+  `Console` auto-detects non-terminal output (e.g. `capsys` in tests), so
+  it degrades to plain text automatically when not attached to a tty.
 
 - **Versioning** (`ansible_taste/constants.py`): `PROGRAM_VERSION` comes
   from installed package metadata (`importlib.metadata.version`), and

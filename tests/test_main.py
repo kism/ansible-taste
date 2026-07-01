@@ -7,7 +7,7 @@ from ansible_taste import __main__
 
 
 def _mock_args(path: Path) -> argparse.Namespace:
-    return argparse.Namespace(path=path, v=0)
+    return argparse.Namespace(path=path)
 
 
 def test_main_pass(
@@ -37,4 +37,6 @@ def test_main_fail(
         __main__.main()
 
     assert exc_info.value.code == 1
-    assert "is in poor taste" in capsys.readouterr().out
+    out = capsys.readouterr().out
+    assert "is in poor taste" in out
+    assert "1 issue(s) found" in out

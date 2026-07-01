@@ -4,14 +4,13 @@ from collections import defaultdict
 from pathlib import Path
 
 import yaml
+from rich.markup import escape
 
-from ansible_taste.utils.logger import get_logger
+from ansible_taste.console import console
 
 from .base import Issue
 
 RULE_ID = "unique-step-names"
-
-logger = get_logger(__name__)
 
 
 def run(files: list[Path]) -> list[Issue]:
@@ -19,10 +18,8 @@ def run(files: list[Path]) -> list[Issue]:
     name_locations: dict[str, list[str]] = defaultdict(list)
 
     for file in files:
-        for task in _load_tasks(file):
-            name = task.get("name") if isinstance(task, dict) else None
-            if isinstance(name, str):
-                name_locations[name].append(str(file))
+        for name, line in _load_task_names(file):
+            name_locations[name].append(f"{file}:{line}")
 
     return [
         Issue(rule_id=RULE_ID, message=f"Duplicate task name: {name!r}", locations=locations)
@@ -31,11 +28,22 @@ def run(files: list[Path]) -> list[Issue]:
     ]
 
 
-def _load_tasks(file: Path) -> list[object]:
+def _load_task_names(file: Path) -> list[tuple[str, int]]:
     try:
-        tasks = yaml.safe_load(file.read_text())
+        root = yaml.compose(file.read_text())
     except yaml.YAMLError:
-        logger.warning("Skipping %s, not valid YAML", file)
+        console.print(f"[yellow]Skipping {escape(str(file))}, not valid YAML[/yellow]")
         return []
 
-    return tasks if isinstance(tasks, list) else []
+    if not isinstance(root, yaml.SequenceNode):
+        return []
+
+    names = []
+    for task_node in root.value:
+        if not isinstance(task_node, yaml.MappingNode):
+            continue
+        for key_node, value_node in task_node.value:
+            if key_node.value == "name" and isinstance(value_node, yaml.ScalarNode):
+                names.append((value_node.value, value_node.start_mark.line + 1))
+
+    return names

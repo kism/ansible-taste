@@ -20,7 +20,7 @@ def test_duplicate_across_files(tmp_path: Path) -> None:
 
     assert len(issues) == 1
     assert issues[0].rule_id == RULE_ID
-    assert set(issues[0].locations) == {str(file_a), str(file_b)}
+    assert set(issues[0].locations) == {f"{file_a}:1", f"{file_b}:1"}
 
 
 def test_duplicate_within_one_file(tmp_path: Path) -> None:
@@ -30,7 +30,7 @@ def test_duplicate_within_one_file(tmp_path: Path) -> None:
     issues = run([file])
 
     assert len(issues) == 1
-    assert issues[0].locations == [str(file), str(file)]
+    assert issues[0].locations == [f"{file}:1", f"{file}:2"]
 
 
 def test_missing_name_does_not_crash(tmp_path: Path) -> None:
