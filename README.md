@@ -1,70 +1,49 @@
-# ansible_taste
+# ansible-taste
 
-[![Check](https://github.com/kism/python-boilerplate/actions/workflows/check.yml/badge.svg)](https://github.com/kism/python-boilerplate/actions/workflows/check.yml)
-[![CheckType](https://github.com/kism/python-boilerplate/actions/workflows/check_types.yml/badge.svg)](https://github.com/kism/python-boilerplate/actions/workflows/check_types.yml)
-[![Test](https://github.com/kism/python-boilerplate/actions/workflows/test.yml/badge.svg)](https://github.com/kism/python-boilerplate/actions/workflows/test.yml)
-[![codecov](https://codecov.io/gh/kism/python-boilerplate/graph/badge.svg?token=FPGDA0ODT7)](https://codecov.io/gh/kism/python-boilerplate)
+[![Check](https://github.com/kism/ansible-taste/actions/workflows/check.yml/badge.svg)](https://github.com/kism/ansible-taste/actions/workflows/check.yml)
+[![CheckType](https://github.com/kism/ansible-taste/actions/workflows/check_types.yml/badge.svg)](https://github.com/kism/ansible-taste/actions/workflows/check_types.yml)
+[![Test](https://github.com/kism/ansible-taste/actions/workflows/test.yml/badge.svg)](https://github.com/kism/ansible-taste/actions/workflows/test.yml)
+[![codecov](https://codecov.io/gh/kism/ansible-taste/graph/badge.svg?token=FPGDA0ODT7)](https://codecov.io/gh/kism/ansible-taste)
 
-## Prerequisites
+A CLI style-guide linter for Ansible projects. It scans `roles/<role>/tasks/*.yml`
+files for "bad taste" issues and exits non-zero if any are found.
 
-Install uv and uvx with the installer script <https://docs.astral.sh/uv/getting-started/installation/>
+Checks:
 
-## Run
+- **unique-step-names** - task `name`s must be unique across the whole
+  project. Names containing a Jinja expression (`{{ ... }}`) are only
+  compared within the same file, not across files.
+- **comment-ratio** - flags a file where whole-line comments make up 30%
+  or more of its non-blank lines.
 
-### Setup
+## Install
 
 ```bash
 uv venv
 source .venv/bin/activate
-uv sync --all-extras # Omit --all-extras for prod
+uv sync --all-extras # omit --all-extras for prod
 ```
 
-### Running the app
+## Usage
 
 ```bash
-python -m ansible_taste
+python -m ansible_taste [path]   # defaults to current directory
+ansible-taste [path]             # once installed via the project's script entry point
 ```
 
-## Check/Test
-
-### Checking
-
-Run `ruff check` or get the vscode ruff extension, the rules are defined in pyproject.toml.
-
-### Type Checking
-
-Run `ty`
-
-### Testing
-
-Run `pytest`, It will get its config from pyproject.toml
-
-Of course when you start writing your app many of the tests will break. With the comments it serves as a somewhat tutorial on using `pytest`, that being said I am not an expert.
-
-### Workflows
-
-The '.github' folder has both a Check and Test workflow.
-
-To get the workflow passing badges on your repo, have a look at <https://docs.github.com/en/actions/monitoring-and-troubleshooting-workflows/adding-a-workflow-status-badge>
-
-Or if you are not using GitHub you can check out workflow badges from your Git hosting service, or use <https://shields.io/> which pretty much covers everything.
-
-### Test Coverage
-
-#### Locally
-
-To get code coverage locally, the config is set in 'pyproject.toml', or run with `pytest`
-
-```bash
-python -m http.server -b 127.0.0.1 8000 -d htmlcov
-```
-
-Open the link in your browser and browse into the 'htmlcov' directory.
-
-#### Codecov
-
-The template repo uses codecov to get a badge on the README.md, look at their guides on config that up since it's stripped out of this repo.
+`path` is the root of the Ansible project to scan (the directory containing
+`roles/`). Exits `0` if no issues are found, `1` otherwise.
 
 ## Config
 
-Defaults are defined in config.py, and config loading and validation are handled in there too.
+Add a `.ansible-taste` YAML file to the directory you run the command from
+(not the scanned `path`) to customize behavior:
+
+```yaml
+exclude_paths: # glob patterns, matched against paths relative to the scanned root
+  - "roles/vendored/*"
+skip_list: # rule IDs to disable
+  - unique-step-names
+```
+
+Both keys are optional; a missing file or missing keys default to empty lists.
