@@ -45,3 +45,24 @@ def test_invalid_yaml_is_skipped(tmp_path: Path) -> None:
     file.write_text("- name: a\n  bad: [unterminated\n")
 
     assert run([file]) == []
+
+
+def test_jinja_name_duplicate_across_files_not_flagged(tmp_path: Path) -> None:
+    file_a = tmp_path / "a.yml"
+    file_a.write_text("- name: Install {{ package_name }}\n")
+    file_b = tmp_path / "b.yml"
+    file_b.write_text("- name: Install {{ package_name }}\n")
+
+    assert run([file_a, file_b]) == []
+
+
+def test_jinja_name_duplicate_within_file_flagged(tmp_path: Path) -> None:
+    file = tmp_path / "main.yml"
+    file.write_text(
+        "- name: Install {{ package_name }}\n- name: Install {{ package_name }}\n",
+    )
+
+    issues = run([file])
+
+    assert len(issues) == 1
+    assert issues[0].locations == [f"{file}:1", f"{file}:2"]

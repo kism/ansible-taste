@@ -1,5 +1,6 @@
 """Check that every task name is unique across the whole project."""
 
+import re
 from collections import defaultdict
 from pathlib import Path
 
@@ -12,20 +13,38 @@ from .base import Issue
 
 RULE_ID = "unique-step-names"
 
+_JINJA_PATTERN = re.compile(r"{{.*}}")
+
 
 def run(files: list[Path]) -> list[Issue]:
-    """Flag task names that appear more than once across all files."""
+    """Flag task names that appear more than once.
+
+    Jinja-templated names (containing ``{{ ... }}``) are only compared
+    within the same file, since the same template can legitimately repeat
+    across files with different variable values.
+    """
     name_locations: dict[str, list[str]] = defaultdict(list)
+    jinja_name_locations: dict[tuple[Path, str], list[str]] = defaultdict(list)
 
     for file in files:
         for name, line in _load_task_names(file):
-            name_locations[name].append(f"{file}:{line}")
+            location = f"{file}:{line}"
+            if _JINJA_PATTERN.search(name):
+                jinja_name_locations[(file, name)].append(location)
+            else:
+                name_locations[name].append(location)
 
-    return [
+    issues = [
         Issue(rule_id=RULE_ID, message=f"Duplicate task name: {name!r}", locations=locations)
         for name, locations in name_locations.items()
         if len(locations) > 1
     ]
+    issues += [
+        Issue(rule_id=RULE_ID, message=f"Duplicate task name: {name!r}", locations=locations)
+        for (_file, name), locations in jinja_name_locations.items()
+        if len(locations) > 1
+    ]
+    return issues
 
 
 def _load_task_names(file: Path) -> list[tuple[str, int]]:
