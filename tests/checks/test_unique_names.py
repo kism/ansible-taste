@@ -56,6 +56,14 @@ def test_jinja_name_duplicate_across_files_not_flagged(tmp_path: Path) -> None:
     assert run([file_a, file_b]) == []
 
 
+def test_jinja_name_duplicate_across_files_not_flagged_big_var(tmp_path: Path) -> None:
+    file_a = tmp_path / "a.yml"
+    file_a.write_text("- name: Task {{ ansible_facts['f1'] + ansible_facts['f2'] }}\n")
+    file_b = tmp_path / "b.yml"
+    file_b.write_text("- name: Task {{ ansible_facts['f1'] + ansible_facts['f2'] }}\n")
+
+    assert run([file_a, file_b]) == []
+
 def test_jinja_name_duplicate_within_file_flagged(tmp_path: Path) -> None:
     file = tmp_path / "main.yml"
     file.write_text(
