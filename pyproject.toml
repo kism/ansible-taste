@@ -35,7 +35,6 @@ ansible-taste = "ansible_taste:__main__.main"
 
 [tool.ruff]
 cache-dir = "~/.cache/ruff"
-target-version = "py312"
 line-length = 120
 
 [tool.ruff.lint]
