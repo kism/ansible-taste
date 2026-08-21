@@ -64,6 +64,7 @@ def test_jinja_name_duplicate_across_files_not_flagged_big_var(tmp_path: Path) -
 
     assert run([file_a, file_b]) == []
 
+
 def test_jinja_name_duplicate_within_file_flagged(tmp_path: Path) -> None:
     file = tmp_path / "main.yml"
     file.write_text(
