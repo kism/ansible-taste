@@ -1,6 +1,6 @@
 [project]
 name = "ansible-taste"
-version = "0.0.1"
+version = "0.0.2"
 description = ""
 authors = []
 readme = "README.md"
@@ -26,9 +26,6 @@ Repository = "https://github.com/kism/ansible-taste"
 [build-system]
 requires = ["uv_build>=0.11.0,<0.12.0"]
 build-backend = "uv_build"
-
-[tool.uv.build-backend]
-module-root = ""
 
 [project.scripts]
 ansible-taste = "ansible_taste:__main__.main"
