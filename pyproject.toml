@@ -42,6 +42,7 @@ ignore = [
     "AIR",  # Airflow not required
     "FAST", # FastAPI not required
     "DTZ",  # no need to specify timezone for time objects
+    "CPY",  # Copyright in pyproject.toml
 
     # Specific rules
     "TD002",  # Verbose TODO, only I work on this project
