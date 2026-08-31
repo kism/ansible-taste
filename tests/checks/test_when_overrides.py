@@ -37,3 +37,10 @@ def test_unrelated_lines_ignored(tmp_path: Path) -> None:
     )
 
     assert run([file]) == []
+
+
+def test_expression_starting_with_literal_passes(tmp_path: Path) -> None:
+    file = tmp_path / "main.yml"
+    file.write_text('- name: a\n  changed_when: false or "Upgraded uv" in configure_uv_update_result.stdout\n')
+
+    assert run([file]) == []

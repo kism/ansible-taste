@@ -19,7 +19,8 @@ def run(files: list[Path]) -> list[Issue]:
     for file in files:
         for lineno, line in enumerate(file.read_text().splitlines(), start=1):
             match = _PATTERN.match(line)
-            if not match or match["rest"].startswith("#"):
+            # rest is either a trailing comment (explained) or more expression (not a bare literal).
+            if not match or match["rest"]:
                 continue
             if match["key"] == "failed_when" and match["value"] != "false":
                 continue
