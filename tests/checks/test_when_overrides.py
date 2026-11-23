@@ -44,3 +44,17 @@ def test_expression_starting_with_literal_passes(tmp_path: Path) -> None:
     file.write_text('- name: a\n  changed_when: false or "Upgraded uv" in configure_uv_update_result.stdout\n')
 
     assert run([file]) == []
+
+
+def test_ignore_errors(tmp_path: Path) -> None:
+    file = tmp_path / "main.yml"
+    file.write_text(
+        "- name: a\n"
+        "  ignore_errors: true\n"
+        "- name: b\n"
+        "  ignore_errors: true  # service may not exist yet\n"
+        "- name: c\n"
+        "  ignore_errors: false\n",
+    )
+
+    assert [issue.locations[0] for issue in run([file])] == [f"{file}:2"]

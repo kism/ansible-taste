@@ -15,6 +15,11 @@ Checks:
   compared within the same file, not across files.
 - **comment-ratio** - flags a file where whole-line comments make up 30%
   or more of its non-blank lines.
+- **unexplained-when-override** - flags `failed_when: false`,
+  `changed_when: true|false` and `ignore_errors: true` unless a trailing
+  comment explains why, e.g. `ignore_errors: true  # service may not exist yet`.
+- **redundant-become-user-root** - flags `become_user: root`, which is
+  already the default for `become`.
 
 ## Install
 

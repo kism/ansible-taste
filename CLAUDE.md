@@ -6,7 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `ansible-taste` is a CLI style-guide linter for Ansible projects. It scans
 `roles/<role>/tasks/*.yml`/`*.yaml` files for "bad taste" issues (currently:
-duplicate task names, and files that are mostly commented-out code) and
+duplicate task names, files that are mostly commented-out code, unexplained
+`failed_when`/`changed_when`/`ignore_errors` overrides, and redundant
+`become_user: root`) and
 exits non-zero if any are found.
 
 ## Commands
@@ -66,8 +68,8 @@ tests).
 
 ## Architecture
 
-Pipeline, wired together in `ansible_taste/scanner.py::scan()` and called
-from `ansible_taste/__main__.py::main()`:
+Pipeline, wired together in `src/ansible_taste/scanner.py::scan()` and called
+from `src/ansible_taste/__main__.py::main()`:
 
 ```
 __main__.main()
@@ -84,7 +86,7 @@ __main__.main()
 
 Key points for extending this:
 
-- **Config** (`ansible_taste/config.py`): `.ansible-taste` is a YAML file
+- **Config** (`src/ansible_taste/config.py`): `.ansible-taste` is a YAML file
   read from the **current working directory**, not the scanned `path` —
   this is intentional (`ansible-taste ../other-repo` still reads config
   from here). Two keys: `exclude_paths` (glob patterns, matched via
@@ -93,12 +95,12 @@ Key points for extending this:
   repo targets `>=3.12`) and `skip_list` (rule IDs to disable). Missing
   file or missing keys default to empty lists, no error.
 
-- **Discovery** (`ansible_taste/discovery.py`): only matches the top level
+- **Discovery** (`src/ansible_taste/discovery.py`): only matches the top level
   of `roles/*/tasks/` — `roles/<role>/tasks/*.yml`, not
   `tasks/**/*.yml`. Nested task directories are not scanned.
 
-- **Checks** (`ansible_taste/checks/`): each check is its own module
-  (`unique_names.py`, `comment_ratio.py`) exposing a module-level `RULE_ID`
+- **Checks** (`src/ansible_taste/checks/`): each check is its own module
+  (`unique_names.py`, `comment_ratio.py`, ...) exposing a module-level `RULE_ID`
   string and a `run(files: list[Path]) -> list[Issue]` function. There is
   no plugin auto-discovery — `checks/__init__.py` is the registry: it
   explicitly wraps each module's `RULE_ID`/`run` into a `Check` dataclass
@@ -116,15 +118,23 @@ Key points for extending this:
     inline comments (`- name: foo  # note`) do not count. Issue locations
     are file-level only — there's no single line a "too many comments"
     issue points at.
+  - `when_overrides` (`unexplained-when-override`): flags bare
+    `failed_when: false`, `changed_when: true|false` and
+    `ignore_errors: true` with no trailing comment saying why. Line regex,
+    not YAML, because the parser drops comments.
+  - `become_user_root` (`redundant-become-user-root`): flags any
+    `become_user: root` (the default) anywhere in the YAML tree, so tasks
+    inside `block:` are covered. Silently skips malformed YAML since
+    `unique_names` already reports it.
 
-- **Output**: `ansible_taste/console.py` exports a single shared
+- **Output**: `src/ansible_taste/console.py` exports a single shared
   `rich.console.Console` instance (`console`). All CLI/check output goes
   through it (rich markup like `[bold red]...[/bold red]`) instead of
   `print()` or a logger — there is no logging framework in this project.
   `Console` auto-detects non-terminal output (e.g. `capsys` in tests), so
   it degrades to plain text automatically when not attached to a tty.
 
-- **Versioning** (`ansible_taste/constants.py`): `PROGRAM_VERSION` comes
+- **Versioning** (`src/ansible_taste/constants.py`): `PROGRAM_VERSION` comes
   from installed package metadata (`importlib.metadata.version`), and
   `PROGRAM_NAME_WITH_FULL_VERSION` additionally reads `.git/HEAD` and
   `.git/logs/HEAD` directly (no subprocess/git dependency) to append branch
